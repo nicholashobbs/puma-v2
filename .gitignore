@@ -1,0 +1,24 @@
+cat > .gitignore <<'EOF'
+# Secrets
+.env
+.env.*
+!*.example
+
+# Node
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/
+
+# Python
+api/__pycache__/
+api/.venv/
+*.pyc
+
+# Docker
+*.log
+# (compose volumes are not in this tree, so no worries there)
+
+# OS/Editor junk
+.DS_Store
+.vscode/
+EOF
