@@ -231,14 +231,14 @@ curl -s -X PUT http://127.0.0.1:8002/api/versions/$VID -H 'Content-Type: applica
 > The included `docker-compose.yml` shows `db`, `redis`, and `web`, with an elided middle section (`...`). Your live compose should define an `api` service that builds `./api` and maps its port. The commands below assume the API is reachable on **127.0.0.1:8002** and Nginx on **127.0.0.1:3102**.
 
 1. **Database env** — Create `.env.db` in repo root (compose references it):
-   ```env
+```env
 POSTGRES_USER=puma
 POSTGRES_PASSWORD=puma
 POSTGRES_DB=puma_v2
 ```
 
 2. **Start DB + API**
-   ```bash
+```bash
 sudo docker compose -p puma_v2 up -d --build db api
 ```
    (The API container runs Uvicorn on 0.0.0.0:8000; map host 8002 → container 8000 in compose.)
@@ -249,7 +249,7 @@ docker exec -it puma_v2_db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c '\d+ ve
 ```
 
 4. **Build frontend + restart Nginx**
-   ```bash
+```bash
 cd frontend
 npm i && npm run build
 cd ..
@@ -257,7 +257,7 @@ sudo docker compose -p puma_v2 up -d --no-deps --force-recreate web
 ```
 
 5. **Smoke test**
-   ```bash
+```bash
 curl -s http://127.0.0.1:8002/api/ping
 curl -s http://127.0.0.1:8002/api/versions
 ```
