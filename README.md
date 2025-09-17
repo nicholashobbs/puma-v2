@@ -244,7 +244,7 @@ sudo docker compose -p puma_v2 up -d --build db api
    (The API container runs Uvicorn on 0.0.0.0:8000; map host 8002 → container 8000 in compose.)
 
 3. **Initialize schema** — On first boot, `api/app/db.py:init_db()` will create tables. Verify:
-   ```bash
+```bash
 docker exec -it puma_v2_db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c '\d+ versions'
 ```
 
