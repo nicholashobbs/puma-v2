@@ -1,57 +1,142 @@
-import os
-from fastapi import FastAPI, Depends
+# api/app/main.py
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-import redis
-from .db import SessionLocal, init_db
+from uuid import UUID
+from datetime import datetime, timezone
+from typing import List
+
+from .db import init_db, get_db
 from . import models, schemas
 
-app = FastAPI(title="Puma v2 API")
+app = FastAPI(title="Puma v2 API", version="0.1.0")
 
-# If you ever hit API directly from a different origin in dev:
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3102", "https://v2.puma.city"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
-r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-
 @app.on_event("startup")
-def startup():
+def on_startup():
     init_db()
+
+# ---------- Defaults shaped like the FE expects ----------
+
+def default_resume() -> dict:
+    return {
+        "resume": {
+            "contact": {"firstName": "Ava", "lastName": "Nguyen", "email": "", "phone": "", "links": []},
+            "summary": "",
+            "skills": [],
+            "sections": [
+                {
+                    "id": "sec_experience",
+                    "name": "Experience",
+                    "fields": ["title", "company", "location", "dates"],
+                    "items": [
+                        {
+                            "id": "itm_exp_1",
+                            "fields": {
+                                "title": "Senior Engineer",
+                                "company": "Acme",
+                                "location": "Denver, CO",
+                                "dates": "2022–Present",
+                            },
+                            "bullets": [],
+                        }
+                    ],
+                },
+                {
+                    "id": "sec_education",
+                    "name": "Education",
+                    "fields": ["school", "degree", "location", "date"],
+                    "items": [
+                        {
+                            "id": "itm_edu_1",
+                            "fields": {"school": "University of Somewhere", "degree": "", "location": "Somewhere, USA", "date": "2020"},
+                            "bullets": [],
+                        }
+                    ],
+                },
+            ],
+            "meta": {"format": "resume-v2", "version": 2, "locale": "en-US"},
+        }
+    }
+
+def default_payload() -> dict:
+    # Mirror useConversation.initialConv() structure exactly.
+    resume_doc = default_resume()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    snap = {
+        "stateId": "st_init",
+        "parentStateId": None,
+        "createdAt": now_iso,
+        "snapshotJson": resume_doc
+    }
+    return {
+        "resume": resume_doc,
+        "states": [snap],
+        "activeStateId": snap["stateId"],
+        "autosaveStateId": snap["stateId"],
+        "userTurns": [],
+        "step": 0
+    }
+
+def default_name() -> str:
+    now = datetime.now(timezone.utc)
+    return f"user-{now.strftime('%y%m%d-%H%M%S')}"
+
+# ---------- Health ----------
 
 @app.get("/api/ping")
 def ping():
     return {"status": "ok"}
 
-@app.post("/api/items", response_model=schemas.ItemOut)
-def create_item(item: schemas.ItemIn, db: Session = Depends(get_db)):
-    m = models.Item(name=item.name)
-    db.add(m)
+# ---------- Versions CRUD ----------
+
+@app.get("/api/versions", response_model=List[schemas.VersionShort])
+def list_versions(db: Session = Depends(get_db)):
+    rows = db.query(models.Version).order_by(models.Version.created_at.desc()).all()
+    return rows
+
+@app.post("/api/versions", response_model=schemas.VersionOut)
+def create_version(body: schemas.VersionCreate = schemas.VersionCreate(), db: Session = Depends(get_db)):
+    name = body.name or default_name()
+    data = body.payload or body.data or default_payload()
+    row = models.Version(name=name, payload=data)  # user_id stays null for now
+    db.add(row)
     db.commit()
-    db.refresh(m)
-    return {"id": m.id, "name": m.name}
+    db.refresh(row)
+    return row
 
-@app.get("/api/items")
-def list_items(db: Session = Depends(get_db)):
-    return [{"id": i.id, "name": i.name} for i in db.query(models.Item).all()]
+@app.get("/api/versions/{version_id}", response_model=schemas.VersionOut)
+def get_version(version_id: UUID, db: Session = Depends(get_db)):
+    row = db.get(models.Version, version_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Version not found")
+    return row
 
-@app.get("/api/cache/hit")
-def cache_hit():
-    count = r.incr("hits")
-    return {"hits": count}
+@app.patch("/api/versions/{version_id}/rename", response_model=schemas.VersionShort)
+def rename_version(version_id: UUID, payload: schemas.VersionRename, db: Session = Depends(get_db)):
+    row = db.get(models.Version, version_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Version not found")
+    row.name = payload.name
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
 
-@app.post("/api/llm/echo")
-def llm_echo(payload: dict):
-    # Placeholder for calling OpenAI/Gemini APIs with your keys (put in .env.api)
-    return {"echo": payload.get("prompt", "")}
+@app.put("/api/versions/{version_id}", response_model=schemas.VersionOut)
+def replace_version_data(version_id: UUID, body: schemas.VersionReplace, db: Session = Depends(get_db)):
+    row = db.get(models.Version, version_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Version not found")
+    data = body.payload or body.data
+    if data is None:
+        raise HTTPException(status_code=400, detail="Missing payload")
+    row.payload = data
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row

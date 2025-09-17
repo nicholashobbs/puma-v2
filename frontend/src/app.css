@@ -1,0 +1,97 @@
+:root { color-scheme: light dark; }
+body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:#fff; }
+.wrap { display:flex; gap:16px; padding:16px; }
+.left { flex:1; min-width:0; }
+.right { flex:1; min-width:0; background:#0b1020; color:#cfe3ff; border-radius:12px; padding:12px; }
+.rtitle { font-weight:700; margin-bottom:6px; }
+.json { white-space:pre-wrap; word-break:break-word; font-size:12px; }
+
+/* Tabs */
+.tabs { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.tab { padding:6px 10px; border:1px solid #ddd; border-radius:999px; background:#fff; color:#111; cursor:pointer; }
+.tab.active { background:#e7f0ff; border-color:#8fb6ff; }
+
+/* Buttons + inputs (force visible black text) */
+button { padding:8px 12px; border:1px solid #ddd; border-radius:8px; background:#fff; color:#111; cursor:pointer; }
+button:disabled { opacity:.5; cursor:not-allowed; }
+.winput { flex:1; padding:8px; border:1px solid #ddd; border-radius:8px; background:#fff; color:#111; }
+
+/* Chat layout */
+.chat { display:flex; flex-direction:column; gap:12px; }
+.bot { background:#f3f6ff; border:1px solid #e3eaff; padding:10px 12px; border-radius:10px; color:#101828; }
+.user { background:#f9f9f9; border:1px solid #eee; padding:10px 12px; border-radius:10px; color:#101828; }
+.widgets { display:flex; flex-direction:column; gap:8px; }
+.submit { margin-top:8px; }
+
+/* Widget cards */
+.wbox { border:1px solid #eaeaea; border-radius:10px; padding:10px; }
+.wtitle { font-weight:600; margin-bottom:6px; }
+.row { display:flex; align-items:center; gap:8px; margin:6px 0; }
+.row.gap { gap:8px; }
+label { width:120px; }
+
+/* Chips */
+.chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+.chip { padding:6px 10px; border-radius:999px; border:1px solid #ddd; background:#fff; color:#111; cursor:pointer; }
+.chip.on { background:#e7f0ff; border-color:#8fb6ff; }
+
+/* Small text + code blocks */
+.small { font-size:12px; color:#666; margin-top:4px; }
+.mini { font-size:11px; background:#111; color:#eee; padding:8px; border-radius:8px; overflow:auto; }
+.convjson { margin-top:12px; }
+
+/* Inline Undo link under last user message */
+.undoRow { margin-top:6px; }
+.undoLink {
+  background:transparent; border:none; padding:0;
+  color:#6b7280; text-decoration:underline; cursor:pointer;
+  font-size:12px; display:inline-flex; align-items:center; gap:4px;
+}
+.undoLink:hover { color:#374151; }
+
+/* Dev footer */
+.devfooter {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 9999;        /* bump if something overlays it */
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+.devbadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(0,0,0,.15);
+  background: rgba(255,255,255,.9);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #111;          /* black text so it’s visible */
+  cursor: pointer;
+  box-shadow: 0 1px 6px rgba(0,0,0,.08);
+}
+
+.devpanel {
+  position: fixed;
+  right: 16px;
+  bottom: 56px;
+  width: 320px;
+  max-height: 60vh;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.15);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  border-radius: 12px;
+  padding: 12px;
+  z-index: 9999;
+  color: #111;
+}
+
+.versionsbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
