@@ -1,11 +1,17 @@
-# api/app/db.py
+from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import os
+from .settings import get_settings
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://puma:puma@db:5432/puma_v2")
+settings = get_settings()
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
+engine = create_engine(
+    settings.DATABASE_URL,
+    pool_pre_ping=True,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
+    future=True,
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 def get_db():
