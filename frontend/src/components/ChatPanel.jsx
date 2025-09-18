@@ -3,6 +3,15 @@ import WidgetRenderer from "./WidgetRenderer.jsx";
 import { buildChangesFromInputs, applyChanges } from "../lib/change.js";
 
 export default function ChatPanel({ conv, botFlow, widgetDefs, view }) {
+  // Defensive doc alias: in this app, conv.resume is the *document* (with top-level "resume")
+  const doc = conv?.resume ?? null;
+
+  // HARD GUARD: never render inputs if we don't have the invariant shape yet
+  // (prevents "Cannot read properties of undefined (reading 'contact')")
+  if (!doc?.resume || !doc.resume.contact) {
+    return null; // or a tiny skeleton/spinner if you prefer
+  }
+
   const stepDef = botFlow[conv.step] || null;
   const [inputs, setInputs] = useState({}); // widgetId -> value
 
@@ -26,8 +35,12 @@ export default function ChatPanel({ conv, botFlow, widgetDefs, view }) {
       return;
     }
 
-    // Compute resumeAfter + patchOps before dispatching
-    const { resume: resumeAfter, patchOps } = applyChanges(conv.resume, changes);
+    // Compute resumeAfter + patchOps before dispatching.
+    // NOTE: conv.resume is the *document* (with top-level "resume").
+    const base = conv?.resume ?? { resume: { contact: { firstName:"", lastName:"", email:"", phone:"", links:[] }, summary:"", skills:[], sections:[], meta:{ format:"resume-v2", version:2, locale:"en-US" } } };
+    const { resume: resumeAfter, patchOps } = applyChanges(base, changes);
+
+    // submitStep signature: (changes, widgets, inputs, resumeAfter, patchOps)
     conv.submitStep(changes, stepDef.widgets, inputs, resumeAfter, patchOps);
     setInputs({});
   }
@@ -39,7 +52,6 @@ export default function ChatPanel({ conv, botFlow, widgetDefs, view }) {
       if (Array.isArray(val)) {
         lines.push(`${wid}: ${val.join(", ")}`);
       } else if (val && typeof val === "object") {
-        // form or list
         const keys = Object.keys(val);
         lines.push(`${wid}: ${keys.slice(0, 3).map(k => `${k}=${val[k] ?? ""}`).join(", ")}`);
       } else {
